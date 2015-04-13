@@ -1,0 +1,20 @@
+.imgtr-upload {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.imgtr-btn-wrapper {
+    margin: 10px 0;
+}
+
+.imageloader-image {
+    position: relative;
+    margin: 5px;
+}
+
+.imageloader-wrapper {
+    text-align: center;
+}
