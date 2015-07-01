@@ -2,31 +2,46 @@
 
 namespace YiiImageTransfer;
 
-use FileTransfer\GottenFile;
+use YiiImageTransfer\YiiImageTransfer;
+use FileTransfer\Wrappers\GottenFile;
 
 class ImageFile extends GottenFile
 {
+    const UNLIMITED_WIDTH = 0;
+    const UNLIMITED_HEIGHT = 1;
+    const UNLIMITED_BOTH = 2;
+    
     protected $_width;
     protected $_height;
-    
+
     protected $_core;
 
     public function __construct(Transfer $transfer, $url = '')
     {
-        $this->_core = Yii::app()->imageTransfer;
-        
         parent::__construct($transfer, $url);
 
-        list(
-            $this->_width,
-            $this->_height
-        ) = getimagesize(Yii::getPathOfAlias('webroot').$this->_url);
+        if($this->exists() || $this->hasReplacement()) {
+            list(
+                $this->_width,
+                $this->_height
+            ) = getimagesize(Yii::getPathOfAlias('webroot').$this->_url);
+        }
+    }
+    
+    /**
+     * Links ImageFile with main transfer plugin
+     * 
+     * @param YiiImageTransfer $core
+     */
+    public function bind(YiiImageTransfer $core)
+    {
+        $this->_core = $core;
     }
     
     public function __get($name)
     {
-        switch($name) {
-            case 'width': 
+        switch ($name) {
+            case 'width':
                 return $this->_width;
             case 'height':
                 return $this->_height;
@@ -35,10 +50,18 @@ class ImageFile extends GottenFile
         }
     }
 
+    /**
+     * Recalculates original image size due to user defined resolution. File
+     * will not be croped but resized by html tools to new resolution. This
+     * method can be used to fast resize with keeping proportions without
+     * creating new file.
+     * 
+     * @param array|string $size new size of image. Can be defined by preset
+     *                           size names or by manual width-height values
+     * @throws YiiITException if size is not array or string
+     */
     public function setSize($size)
     {
-        $sizes = null;
-
         if (is_string($size)) {
             $sizes = $this->getDefinedSize($size);
         } elseif (is_array($size)) {
@@ -46,16 +69,16 @@ class ImageFile extends GottenFile
         } else {
             throw new YiiITException('Attribute `size` has unrecognized type');
         }
-
+        
         $coefficient = $sizes['width'] / $sizes['height'];
 
-        if ($sizes['width'] > $sizes->sizeWidth) {
-            $sizes['width'] = $sizes->sizeWidth;
+        if (!is_null($sizes['sizeWidth']) && $sizes['width'] > $sizes['sizeWidth']) {
+            $sizes['width'] = $sizes['sizeWidth'];
             $sizes['height'] = $sizes['width'] / $coefficient;
         }
 
-        if ($sizes['height'] > $sizes->sizeHeight) {
-            $sizes['height'] = $sizes->sizeHeight;
+        if (!is_null($sizes['sizeHeight']) && $sizes['height'] > $sizes['sizeHeight']) {
+            $sizes['height'] = $sizes['sizeHeight'];
             $sizes['width'] = $sizes['height'] * $coefficient;
         }
 
@@ -67,24 +90,16 @@ class ImageFile extends GottenFile
     {
         if (!in_array($size, $this->_core->allowedSizes())) {
             throw new YiiITException('Size can be only `'
-                    .implode('`, `', $this->_core->allowedSizes())
-                    ."`, not `$size`");
+                .implode('`, `', $this->_core->allowedSizes())
+                ."`, not `$size`");
         }
 
-        $sizes = array(
-            'width' => 0,
-            'height' => 0,
-            'sizeWidth' => 0,
-            'sizeHeight' => 0,
-         );
-
-        $sizes['width'] = $this->_width;
-        $sizes['height'] = $this->_height;
-
-        $sizes['sizeWidth'] = $this->_core->sizes[$size]['width'];
-        $sizes['sizeHeight'] = $this->_core->sizes[$size]['height'];
-
-        return $sizes;
+        return array(
+            'width' => $this->_width,
+            'height' => $this->_height,
+            'sizeWidth' => $this->_core->sizes[$size]['width'],
+            'sizeHeight' => $this->_core->sizes[$size]['height'],
+        );
     }
 
     protected function getManualSize(array $size)
@@ -96,19 +111,11 @@ class ImageFile extends GottenFile
                 .' => int, "height" => int)');
         }
 
-        $sizes = array(
-            'width' => 0,
-            'height' => 0,
-            'sizeWidth' => 0,
-            'sizeHeight' => 0,
+        return array(
+            'width' => $this->_width,
+            'height' => $this->_height,
+            'sizeWidth' => $size['width'],
+            'sizeHeight' => $size['height'],
          );
-
-        $sizes['width'] = $this->_width;
-        $sizes['height'] = $this->_height;
-
-        $sizes['sizeWidth'] = $size['width'];
-        $sizes['sizeHeight'] = $size['height'];
-
-        return $sizes;
     }
 }
