@@ -1,7 +1,5 @@
 <?php
 
-namespace YiiImageTransfer;
-
 class YiiITException extends Exception
 {
     public function __construct($message, $code = 0, $previous = null)

@@ -1,7 +1,5 @@
 <?php
 
-namespace YiiImageTransfer;
-
 use FileTransfer\Transfer;
 use abeautifulsite\SimpleImage;
 
@@ -62,16 +60,19 @@ class YiiImageTransfer extends CApplicationComponent
      */
     public function init()
     {
+        Yii::setPathOfAlias('imgtr', __DIR__.'/../');
+        require Yii::getPathOfAlias('imgtr.extensions.ImageFile').'.php';
+
         $this->initAssets();
         $this->checkData();
-        
-        $placeholder = $this->placeholder !== null?
+
+        $placeholder = $this->placeholder !== null ?
             $this->placeholder :
             $this->assetUrl.'/images/image_placeholder.png';
 
         $this->_transfer = new Transfer(array(
             'absolutePath' => Yii::getPathOfAlias('webroot'),
-            'relativePath' => Yii::app()->basePath,
+            'relativePath' => Yii::app()->baseUrl,
             'dir' => $this->dir,
             'allowedExtensions' => $this->allowedExtensions,
             'handlers' => $this->createHandlers(),
@@ -100,10 +101,10 @@ class YiiImageTransfer extends CApplicationComponent
      * Finds and returns file in `$subdir` folder by its code created at
      * uploading.
      *
-     * @param string $code       code of image created at uploading
-     * @param string $subdir     name of subdirectory to separate different image
-     *                           types
-     * @param string $size       image size name (one of listed in `$sizes` field)
+     * @param string $code   code of image created at uploading
+     * @param string $subdir name of subdirectory to separate different image
+     *                       types
+     * @param string $size   image size name (one of listed in `$sizes` field)
      *
      * @return ImageFile result file
      */
@@ -125,11 +126,26 @@ class YiiImageTransfer extends CApplicationComponent
     public function __get($name)
     {
         switch ($name) {
-            case 'assetUrl':
+            case 'assetUrl' :
                 return $this->assetUrl;
             default:
                 return parent::__get($name);
         }
+    }
+
+    /**
+     * Removes selected file.
+     *
+     * @param string $code    file code (filename created at upload
+     *                        operation)
+     * @param string $subdir  subdirectory in the uploading files directory
+     *                        to separate uploading files by user defined
+     *                        types
+     * @param string $handler name of handler applied to file on uploading
+     */
+    public function remove($code, $subdir, $handler)
+    {
+        $this->_transfer->remove($code, $subdir, $handler);
     }
 
     /**
@@ -148,12 +164,12 @@ class YiiImageTransfer extends CApplicationComponent
      */
     protected function initAssets()
     {
-        $this->assetUrl = Yii::app()->assetManager->publish(
-            realpath(__DIR__.'../assets'),
+        $this->assetUrl = substr(Yii::app()->assetManager->publish(
+            realpath(__DIR__.'/../assets'),
             false,
             -1,
             YII_DEBUG
-        );
+        ), 1);
     }
 
     /*

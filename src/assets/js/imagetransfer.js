@@ -1,8 +1,8 @@
 var ImageUploader = (function(){
     function ImageUploader(options)
     {
-        this.maxWidth = options.maxWidth;
-        this.maxHeight = options.maxHeight;
+        this.maxWidth = options.maxWidth !== null? options.maxWidth : 10000;
+        this.maxHeight = options.maxHeight !== null? options.maxHeight : 10000;
     }
     
     ImageUploader.prototype.setFieldData = function(data)
@@ -49,7 +49,7 @@ var ImageUploader = (function(){
                     ul.appendChild(li);
                     
                     input.addEventListener('change', function(){
-                        _this.uploadHandler(this, img);
+                        _this.uploadHandler(this);
                     });
                 });
             }
@@ -63,20 +63,21 @@ var ImageUploader = (function(){
         var wrappers = document.getElementsByClassName('imgtrup-wrapper');
         
         for(var i = 0; i < wrappers.length; i++) {
-            var images = wrappers[i].getElementsByTagName('img');
             var fileinputs = wrappers[i].getElementsByClassName('imgtrup-input');
             
             for(var j = 0; j < fileinputs.length; j++) {
                 fileinputs[j].addEventListener('change', function(){
-                    _this.uploadHandler(this, images[j]);
+                    _this.uploadHandler(this);
                 });
             }
         }
     };
     
-    ImageUploader.prototype.uploadHandler = function(fileinput, image)
+    ImageUploader.prototype.uploadHandler = function(fileinput)
     {
         var _this = this;
+        
+        var image = fileinput.parentNode.getElementsByTagName('img')[0];
         
         if (fileinput.files && fileinput.files[0])
         {
@@ -102,9 +103,9 @@ var ImageUploader = (function(){
                         this.width *= proportion;
                     }
                     
-                    image.attr('src', this.src);
-                    image.attr('width', this.width);
-                    image.attr('height', this.height);
+                    image.src = this.src;
+                    image.width = this.width;
+                    image.height = this.height;
                 };
             };
             

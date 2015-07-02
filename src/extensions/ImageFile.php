@@ -1,8 +1,5 @@
 <?php
 
-namespace YiiImageTransfer;
-
-use YiiImageTransfer\YiiImageTransfer;
 use FileTransfer\Wrappers\GottenFile;
 
 class ImageFile extends GottenFile
@@ -19,19 +16,19 @@ class ImageFile extends GottenFile
         list(
             $this->_width,
             $this->_height
-        ) = getimagesize(Yii::getPathOfAlias('webroot').$this->_url);
+        ) = getimagesize($this->absoluteUrl);
     }
-    
+
     /**
-     * Links ImageFile with main transfer plugin
-     * 
+     * Links ImageFile with main transfer plugin.
+     *
      * @param YiiImageTransfer $core
      */
     public function bind(YiiImageTransfer $core)
     {
         $this->_core = $core;
     }
-    
+
     public function __get($name)
     {
         switch ($name) {
@@ -49,9 +46,10 @@ class ImageFile extends GottenFile
      * will not be croped but resized by html tools to new resolution. This
      * method can be used to fast resize with keeping proportions without
      * creating new file.
-     * 
+     *
      * @param array|string $size new size of image. Can be defined by preset
      *                           size names or by manual width-height values
+     *
      * @throws YiiITException if size is not array or string
      */
     public function setSize($size)
@@ -63,7 +61,7 @@ class ImageFile extends GottenFile
         } else {
             throw new YiiITException('Attribute `size` has unrecognized type');
         }
-        
+
         $coefficient = $sizes['width'] / $sizes['height'];
 
         if ($sizes['sizeWidth'] !== null && $sizes['width'] > $sizes['sizeWidth']) {

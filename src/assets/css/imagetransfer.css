@@ -1,4 +1,13 @@
-.imgtr-upload {
+.imgtrup-wrapper ul {
+    margin: 0;
+    padding: 0;
+}
+
+.imgtrup-wrapper ul li {
+    list-style-type: none;
+}
+
+.imgtrup-input {
     opacity: 0;
     position: absolute;
     top: 0;
