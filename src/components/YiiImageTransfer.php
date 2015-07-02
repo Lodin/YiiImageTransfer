@@ -68,7 +68,7 @@ class YiiImageTransfer extends CApplicationComponent
 
         $placeholder = $this->placeholder !== null ?
             $this->placeholder :
-            $this->assetUrl.'/images/image_placeholder.png';
+            $this->assetUrl.'/images/placeholder.png';
 
         $this->_transfer = new Transfer(array(
             'absolutePath' => Yii::getPathOfAlias('webroot'),
@@ -94,7 +94,7 @@ class YiiImageTransfer extends CApplicationComponent
      */
     public function upload($files, $subdir, $userSizes)
     {
-        $this->_transfer->upload($files, $subdir, $userSizes);
+        return $this->_transfer->upload($files, $subdir, $userSizes);
     }
 
     /**
