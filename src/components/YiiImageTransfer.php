@@ -64,6 +64,10 @@ class YiiImageTransfer extends CApplicationComponent
     {
         $this->initAssets();
         $this->checkData();
+        
+        $placeholder = $this->placeholder !== null?
+            $this->placeholder :
+            $this->assetUrl.'/images/image_placeholder.png';
 
         $this->_transfer = new Transfer(array(
             'absolutePath' => Yii::getPathOfAlias('webroot'),
@@ -73,7 +77,7 @@ class YiiImageTransfer extends CApplicationComponent
             'handlers' => $this->createHandlers(),
             'filesInFolder' => $this->filesInFolder,
             'mimeCacheFile' => Yii::getPathOfAlias('webroot').'/protected/data/mimetypes.php',
-            'emptyFileReplacement' => $this->placeholder,
+            'emptyFileReplacement' => $placeholder,
             'gottenFileClass' => 'ImageFile',
         ));
     }
@@ -132,15 +136,11 @@ class YiiImageTransfer extends CApplicationComponent
      * Returns placeholder - an image to replace requested image if it is not
      * found. Returns default plugin placeholder if custom does not set.
      *
-     * @return string
+     * @return ImageFile
      */
     public function getPlaceholder()
     {
-        if (is_null($this->placeholder)) {
-            return $this->assetUrl.'/images/image_placeholder.png';
-        }
-
-        return $this->placeholder;
+        return new ImageFile($this->_transfer, '');
     }
 
     /*

@@ -7,10 +7,6 @@ use FileTransfer\Wrappers\GottenFile;
 
 class ImageFile extends GottenFile
 {
-    const UNLIMITED_WIDTH = 0;
-    const UNLIMITED_HEIGHT = 1;
-    const UNLIMITED_BOTH = 2;
-    
     protected $_width;
     protected $_height;
 
@@ -20,12 +16,10 @@ class ImageFile extends GottenFile
     {
         parent::__construct($transfer, $url);
 
-        if($this->exists() || $this->hasReplacement()) {
-            list(
-                $this->_width,
-                $this->_height
-            ) = getimagesize(Yii::getPathOfAlias('webroot').$this->_url);
-        }
+        list(
+            $this->_width,
+            $this->_height
+        ) = getimagesize(Yii::getPathOfAlias('webroot').$this->_url);
     }
     
     /**
@@ -72,12 +66,12 @@ class ImageFile extends GottenFile
         
         $coefficient = $sizes['width'] / $sizes['height'];
 
-        if (!is_null($sizes['sizeWidth']) && $sizes['width'] > $sizes['sizeWidth']) {
+        if ($sizes['sizeWidth'] !== null && $sizes['width'] > $sizes['sizeWidth']) {
             $sizes['width'] = $sizes['sizeWidth'];
             $sizes['height'] = $sizes['width'] / $coefficient;
         }
 
-        if (!is_null($sizes['sizeHeight']) && $sizes['height'] > $sizes['sizeHeight']) {
+        if ($sizes['sizeHeight'] !== null && $sizes['height'] > $sizes['sizeHeight']) {
             $sizes['height'] = $sizes['sizeHeight'];
             $sizes['width'] = $sizes['height'] * $coefficient;
         }

@@ -4,142 +4,186 @@ namespace YiiImageTransfer;
 
 class ImageUploader extends CWidget
 {
-    public $names = null;
-    public $multipleMode = false;
-
-    public $type = '';
-    public $subfolder = '';
-
-    public $options;
-
-    public $max = null;
-
-    public $addingBtnLabel = 'Add';
-
+    /**
+     * List of already uploaded images codes to display it for reloading. Codes
+     * are created at uploading operation
+     * @var array
+     */
+    public $codes = array();
+    
+    /**
+     * Allows image uploading fields multiplication by adding special button
+     * @var boolean
+     */
+    public $multiplicate = false;
+    
+    /**
+     * Image size to display images defined in `$codes` property
+     * @var string
+     */
+    public $size = '';
+    
+    /**
+     * Directory under the main image directory separating image by different
+     * types
+     * @var string
+     */
+    public $subdir = '';
+    
+    /**
+     * Image wrapper tag html options
+     * @var array
+     */
+    public $htmlOptions = array();
+    
+    /**
+     * Customizes image wrapper tag
+     * @var array
+     */
+    public $imageWrapperOptions = array();
+    
+    /**
+     * Image or it's placeholder options
+     * @var array
+     */
+    public $imageOptions = array();
+    
+    /**
+     * Uploading model
+     * @var CActiveRecord
+     */
+    public $model = null;
+    
+    /**
+     * Defines tag which can be set to wrapper. By default it is `div`, but
+     * can be set e.g. to `li`, if the list is need.
+     * @var string 
+     */
+    public $tag = 'div';
+    
+    /**
+     * Model attribute name
+     * @var string
+     */
+    public $attribute = '';
+    
+    /**
+     * Multiplicate button html options. Key `label` can contain button label
+     * text
+     * @var array 
+     */
+    public $multiplicateButtonOptions = array();
+    
+    /**
+     * User defined alias for YiiImageTransfer plugin. Default is
+     * `imageTransfer`
+     * @var string 
+     */
+    public $alias = 'imageTransfer';
+    
     protected $_core;
-
+    
     public function init()
     {
-        $this->_core = Yii::app()->imageTransfer;
-
+        $this->_core = Yii::app()->{$this->alias};
         $this->checkData();
+        
+        $cs = Yii::app()->getClientScript();
+        $cs->registerScriptFile($this->_core->assetUrl.'/js/imagetransfer.js');
+        $cs->registerScript('init-uploader', 'var uploader = new ImageUploader({'
+            .'maxWidth:'.isset($this->imageOptions['width'])? $this->imageOptions['width'] : 'null,'
+            .'maxHeight:'.isset($this->imageOptions['height'])? $this->imageOptions['height'] : 'null'
+            .'});'
+            . 'uploader.handleUploading();');
     }
-
+    
     public function run()
     {
-        echo CHtml::openTag('div', array('class' => 'imgtr-uploader'));
-
-        if ($this->multipleMode) {
-            if (isset($this->buttonHtmlOptions['class'])) {
-                $this->buttonHtmlOptions['class'] .= ' ';
+        $htmlOptions = isset($this->htmlOptions) ? $this->htmlOptions : array();
+        $htmlOptions['class'] = isset($htmlOptions['class']) ?
+            $htmlOptions['class'] .= ' imgtrup-wrapper'
+            : $htmlOptions['class'] = 'imgtrup-wrapper';
+        
+        $widgetData = array(
+            'subdir' => $this->subdir,
+            'size' => $this->size,
+            'tag' => 'li',
+            'htmlOptions' => $this->imageWrapperOptions,
+            'imageOptions' => $this->imageOptions,
+            'alias' => $this->alias
+        );
+        
+        $inputData = array(
+            'type' => 'file',
+            'class' => 'imgtrup-input',
+            'name' => get_class($this->model)."[{$this->attribute}]"
+        );
+            
+        if($this->multiplicate || count($this->codes) > 1) {
+            $inputData['name'] .= '[]';
+        }
+        
+        echo CHtml::openTag($this->tag, $htmlOptions);
+        
+        if($this->multiplicate) {
+            $mBtnOptions = isset($this->multiplicateButtonOptions) ?
+                $this->multiplicateButtonOptions
+                : array();
+            
+            if (isset($mBtnOptions['label'])) {
+                $label = $mBtnOptions['label'];
+                unset($mBtnOptions['label']);
+            } else {
+                $label = 'Add';
             }
-
-            echo CHtml::openTag('div', array('class' => 'imgtr-btn-wrapper'));
-            echo CHtml::tag('button', $this->htmlOptions['button'], $this->addingBtnLabel);
-            echo CHtml::closeTag('div'); // imgtr-btn-wrapper
+            
+            $mBtnOptions['class'] = isset($mBtnOptions['class']) ?
+                $mBtnOptions['class'] .= ' imgtrup-btn-multiplicate'
+                : $mBtnOptions['class'] = 'imgtrup-btn-multiplicate';
+            
+            CHtml::button($label, $mBtnOptions);
+            
+            $imageHtmlOptions = isset($this->htmlOptions) ? $this->htmlOptions : array();
+            $imageHtmlOptions['class'] = isset($imageHtmlOptions['class']) ?
+                $imageHtmlOptions['class'] .= ' imgtrgt-wrapper'
+                : $imageHtmlOptions['class'] = 'imgtrgt-wrapper';
+            
+            Yii::app()->getClientScript()
+                ->registerScript('init-multiplicator', 'uploader.setFieldData('
+                    .json_encode(array(
+                        'wrapper' => $imageHtmlOptions,
+                        'img' => $this->imageOptions,
+                        'input' => array('name' => $inputData['name'])
+                    ))
+                .')');
         }
-
-        echo CHtml::openTag('div', array('class' => 'imgtr-list'));
-
-        if ($this->multipleMode) {
-            echo CHtml::tag('input', array(
-                'type' => 'hidden',
-                'class' => 'imgtr-el-data',
-                'value' => json_encode(array(
-                    'placeholder' => $this->_core->placeholder,
-                    'wrapperOptions' => isset($this->htmlOptions['wrapper']) ?
-                        $this->htmlOptions['wrapper']
-                        : '',
-                    'name' => isset($this->htmlOptions['image']['name']) ?
-                        $this->htmlOptions['image']['name']
-                        : '',
-                )),
-            ));
+        
+        echo CHtml::openTag('ul');
+        
+        if(empty($this->codes)) {
+            $this->widget('ImageGetter', array_merge(array(
+                'code' => null,
+            ), $widgetData));
+            
+            echo CHtml::tag('input', $inputData);
+        } else {
+            foreach($this->codes as $code) {
+                $this->widget('ImageGetter', array_merge(array(
+                    'code' => $code,
+                ), $widgetData));
+                echo CHtml::tag('input', $inputData);
+            }
         }
-
-        foreach ($this->getImages() as $image) {
-            $wrapperHtmlOptions = isset($this->htmlOptions['wrapper']) ?
-                $this->htmlOptions['wrapper']
-                : array();
-
-            $imageHtmlOptions = isset($this->htmlOptions['image']) ?
-                $this->htmlOptions['image']
-                : array();
-
-            $wrapperHtmlOptions['class'] = isset($wrapperHtmlOptions['class']) ?
-                $wrapperHtmlOptions['class'] .= ' imgtr-image'
-                : $wrapperHtmlOptions['class'] = 'imgtr-image';
-
-            $imageHtmlOptions['src'] = $image->relativeUrl;
-            $imageHtmlOptions['width'] = $image->width;
-            $imageHtmlOptions['height'] = $image->height;
-
-            CHtml::openTag('div', $wrapperHtmlOptions);
-            CHtml::tag('img', $imageHtmlOptions);
-            CHtml::closeTag('div');
-        }
-
-        echo CHtml::closeTag('div'); // imgtr-list
-
-        echo CHtml::closeTag('div'); // imgtr-uploader
+        echo CHtml::closeTag('ul');
+        echo CHtml::closeTag($this->tag);
     }
-
+    
     protected function checkData()
     {
-        if (!in_array($this->type, $this->_core->allowedTypes())) {
-            throw new YiiITException("Type `{$this->type}` is not allowed");
-        }
-
-        $allowedOptions = array('button', 'wrapper', 'image');
-        $allowedHtmlOptionKey = array('id', 'class', 'name');
-        foreach ($this->htmlOptions as $optionName => $option) {
-            if (!in_array($optionName, $allowedOptions)) {
-                throw new YiiITException("Option `$optionName` is not allowed. You"
-                    .' can use: '.implode(', ', $allowedOptions));
-            }
-
-            foreach ($option as $key => $val) {
-                if (!in_array($key, $allowedHtmlOptionKey)) {
-                    throw new YiiITException("`$optionName` can"
-                        .' contain only '.implode(', ', $allowedHtmlOptionKey));
-                }
-            }
-        }
-
-        if (empty($this->addingBtnLabel)) {
-            throw new YiiITException('Adding button label should be defined');
-        }
-    }
-
-    protected function getImages()
-    {
-        if ($this->multipleMode) {
-            $i = 0;
-            $images = array();
-
-            if (is_array($this->names)) {
-                foreach ($this->names as $imgID) {
-                    if ($this->max !== null && $i > $this->max) {
-                        break;
-                    }
-
-                    $images[] = $this->_core->get($imgID, $this->subfolder, $this->size);
-                    if ($imgID === null) {
-                        $images[count($images) - 1]->setSize($this->size);
-                    }
-
-                    $i++;
-                }
-            } else {
-                $images[] = $this->_core->get($this->names, $this->subfolder, $this->size);
-                if ($this->names === null) {
-                    $images[count($images) - 1]->setSize($this->size);
-                }
-            }
-
-            return $images;
-        } else {
-            return array($this->_core->get($this->names, $this->subfolder, $this->type));
+        if(!in_array($this->size, $this->_core->allowedSizes())) {
+            throw new YiiITException('Size can be only `'
+                .implode('`, `', $this->_core->allowedSizes())
+                ."`, not `$this->size`");
         }
     }
 }

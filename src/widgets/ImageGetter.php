@@ -8,15 +8,16 @@ namespace YiiImageTransfer;
  * 
  * <{tag} class="imgtr-wrapper {htmlOptions['class']}" {htmlOptions}>
  *     <img src="{code}" {imageOptions} />
+ *     {htmlInjection}
  * </{tag}>
  */
 class ImageGetter extends CWidget
 {
     /**
      * Code of image uploaded earlier
-     * @var string
+     * @var string|null
      */
-    public $code = '';
+    public $code = null;
     
     /**
      * Directory under the main image directory separating image by different
@@ -39,7 +40,7 @@ class ImageGetter extends CWidget
     public $tag = 'div';
     
     /**
-     * Image parent div wrapper html options
+     * Image wrapper tag html options
      * @var array
      */
     public $htmlOptions = array();
@@ -62,12 +63,7 @@ class ImageGetter extends CWidget
     public function init()
     {
         $this->_core = Yii::app()->{$this->alias};
-        
-        if(!in_array($this->size, $this->_core->allowedSizes())) {
-            throw new YiiITException('Size can be only `'
-                .implode('`, `', $this->_core->allowedSizes())
-                ."`, not `$this->size`");
-        }
+        $this->checkData();
         
         Yii::app()->getClientScript()
             ->registerCssFile($this->_core->assetUrl.'/css/imagetransfer.css');
@@ -75,8 +71,12 @@ class ImageGetter extends CWidget
     
     public function run()
     {
-        $sizes = $this->_core->sizes[$this->size];
-        $img = $this->_core->get($this->code, $this->subdir, $this->size);
+        if($this->code !== null) {
+            $img = $this->_core->get($this->code, $this->subdir, $this->size);
+        } else {
+            $img = $this->_core->getPlaceholder();
+        }
+        
         $img->bind($this->_core);
         
         if($this->size !== '') {
@@ -90,6 +90,32 @@ class ImageGetter extends CWidget
                     $this->imageOptions['height']
                     : null,
             ));
+        }
+        
+        $htmlOptions = isset($this->htmlOptions) ? $this->htmlOptions : array();
+        $htmlOptions['class'] = isset($htmlOptions['class']) ?
+            $htmlOptions['class'] .= ' imgtrgt-wrapper'
+            : $htmlOptions['class'] = 'imgtrgt-wrapper';
+        
+        $imageOptions = $this->imageOptions;
+        unset($imageOptions['width']);
+        unset($imageOptions['height']);
+        
+        echo CHtml::openTag($this->tag, $htmlOptions);
+        echo CHtml::tag('img', array_merge(array(
+            'src' => $img->url,
+            'width' => $img->width,
+            'height' => $img->height
+        ), $imageOptions));
+        echo CHtml::closeTag($this->tag);
+    }
+    
+    protected function checkData()
+    {
+        if(!in_array($this->size, $this->_core->allowedSizes())) {
+            throw new YiiITException('Size can be only `'
+                .implode('`, `', $this->_core->allowedSizes())
+                ."`, not `$this->size`");
         }
     }
 }
