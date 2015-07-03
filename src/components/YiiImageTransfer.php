@@ -62,7 +62,8 @@ class YiiImageTransfer extends CApplicationComponent
     {
         Yii::setPathOfAlias('imgtr', __DIR__.'/../');
         require Yii::getPathOfAlias('imgtr.extensions.ImageFile').'.php';
-
+        require Yii::getPathOfAlias('imgtr.extensions.YiiITException').'.php';
+        
         $this->initAssets();
         $this->checkData();
 

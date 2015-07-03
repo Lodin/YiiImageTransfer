@@ -1,8 +1,8 @@
 var ImageUploader = (function(){
     function ImageUploader(options)
     {
-        this.maxWidth = options.maxWidth !== null? options.maxWidth : 10000;
-        this.maxHeight = options.maxHeight !== null? options.maxHeight : 10000;
+        this.maxWidth = options.maxWidth;
+        this.maxHeight = options.maxHeight;
     }
     
     ImageUploader.prototype.setFieldData = function(data)
@@ -23,15 +23,21 @@ var ImageUploader = (function(){
             var wrappers = document.getElementsByClassName('imgtrup-wrapper');
             
             for(var i = 0; i < buttons.length; i++) {
-                var ul = wrappers[i].getElementsByTagName('ul');
+                var ul = wrappers[i].getElementsByTagName('ul')[0];
             
                 buttons[i].addEventListener('click', function(e){
                     e.preventDefault();
                     
+                    if(_this.newField.max <= ul.getElementsByTagName('li').length) {
+                        return;
+                    }
+                    
                     var li = document.createElement('li');
+                    var divWrapper = document.createElement('div');
+                    divWrapper.classList.add('imgtrgt-wrapper');
                     
                     for(var property in _this.newField.wrapper) {
-                        li[property] = _this.newField.wrapper[property];
+                        divWrapper[property] = _this.newField.wrapper[property];
                     }
                     
                     var img = new Image;
@@ -44,8 +50,14 @@ var ImageUploader = (function(){
                     input.classList.add('imgtrup-input');
                     input.name = _this.newField.input.name;
                     
-                    li.appendChild(img);
+                    var tip = document.createElement('div');
+                    tip.classList.add('imgtrup-tip');
+                    tip.innerText = _this.newField.tip;
+                    
+                    divWrapper.appendChild(img);
+                    li.appendChild(divWrapper);
                     li.appendChild(input);
+                    li.appendChild(tip);
                     ul.appendChild(li);
                     
                     input.addEventListener('change', function(){

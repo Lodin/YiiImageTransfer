@@ -77,11 +77,33 @@ class ImageUploader extends CWidget
 
     /**
      * Multiplicate button html options. Key `label` can contain button label
-     * text.
+     * text, and key `position` can define, where button will be appear: before
+     * or after main code. 
      *
      * @var array
      */
     public $multiplicateButtonOptions = array();
+    
+    /**
+     * Defines maximal count of images user can upload at one operation
+     * 
+     * @var integer
+     */
+    public $max = 1;
+    
+    /**
+     * Defines how many places for image uploading should be created from start
+     * 
+     * @var integer
+     */
+    public $defaultCount = 1;
+    
+    /**
+     * Tip for uploading field
+     * 
+     * @var string
+     */
+    public $tip = 'Click to upload image';
 
     /**
      * User defined alias for YiiImageTransfer plugin. Default is
@@ -99,10 +121,14 @@ class ImageUploader extends CWidget
         $this->checkData();
 
         $cs = Yii::app()->getClientScript();
-        $cs->registerScriptFile($this->_core->assetUrl.'/js/imagetransfer.js');
+        $cs->registerScriptFile("/{$this->_core->assetUrl}/js/imagetransfer.js");
         $cs->registerScript('init-uploader', 'var uploader = new ImageUploader({'
-            .'maxWidth:'.(isset($this->imageOptions['width']) ? $this->imageOptions['width'] : 'null').','
-            .'maxHeight:'.(isset($this->imageOptions['height']) ? $this->imageOptions['height'] : 'null')
+            .'maxWidth:'.(isset($this->imageOptions['width']) ?
+                $this->imageOptions['width']
+                : $this->_core->sizes[$this->size]['width']).','
+            .'maxHeight:'.(isset($this->imageOptions['height']) ?
+                $this->imageOptions['height']
+                : $this->_core->sizes[$this->size]['height'])
             .'});'
             .'uploader.handleUploading();');
     }
@@ -117,7 +143,6 @@ class ImageUploader extends CWidget
         $widgetData = array(
             'subdir' => $this->subdir,
             'size' => $this->size,
-            'tag' => 'li',
             'htmlOptions' => $this->imageWrapperOptions,
             'imageOptions' => $this->imageOptions,
             'alias' => $this->alias,
@@ -151,40 +176,75 @@ class ImageUploader extends CWidget
                 $mBtnOptions['class'] .= ' imgtrup-btn-multiplicate'
                 : $mBtnOptions['class'] = 'imgtrup-btn-multiplicate';
 
-            CHtml::button($label, $mBtnOptions);
+            $mbtn = CHtml::button($label, $mBtnOptions);
 
             $imageHtmlOptions = isset($this->htmlOptions) ? $this->htmlOptions : array();
             $imageHtmlOptions['class'] = isset($imageHtmlOptions['class']) ?
                 $imageHtmlOptions['class'] .= ' imgtrgt-wrapper'
                 : $imageHtmlOptions['class'] = 'imgtrgt-wrapper';
 
+            $placeholder = $this->_core->getPlaceholder();
+            $placeholder->bind($this->_core);
+            $placeholder->setSize($this->size);
+            
             Yii::app()->getClientScript()
                 ->registerScript('init-multiplicator', 'uploader.setFieldData('
                     .json_encode(array(
                         'wrapper' => $imageHtmlOptions,
-                        'img' => $this->imageOptions,
+                        'img' => array_merge(
+                            array(
+                                'src' => $placeholder->url,
+                                'width' => $placeholder->width,
+                                'height' => $placeholder->height
+                            ),
+                            $this->imageOptions
+                        ),
                         'input' => array('name' => $inputData['name']),
+                        'max' => $this->max,
+                        'tip' => $this->tip
                     ))
-                .')');
+                .');'
+                . 'uploader.handleMultiplication();');
         }
-
+        
+        if($this->multiplicate
+            && isset($this->multiplicateButtonOptions)
+            && $this->multiplicateButtonOptions['position'] === 'before') {
+            echo $mbtn;
+        }
+        
         echo CHtml::openTag('ul');
 
         if (empty($this->codes)) {
-            $this->widget('imgtr.widgets.ImageGetter', array_merge(array(
-                'code' => null,
-            ), $widgetData));
+            for ($i = 0; $i < $this->defaultCount; $i++) {
+                echo CHtml::openTag('li');
+                $this->widget('imgtr.widgets.ImageGetter', array_merge(array(
+                    'code' => null,
+                ), $widgetData));
 
-            echo CHtml::tag('input', $inputData);
+                echo CHtml::tag('input', $inputData);
+                echo CHtml::tag('div', ['class' => 'imgtrup-tip'], $this->tip);
+                echo CHtml::closeTag('li');
+            }
         } else {
             foreach ($this->codes as $code) {
+                echo CHtml::openTag('li');
                 $this->widget('imgtr.widgets.ImageGetter', array_merge(array(
                     'code' => $code,
                 ), $widgetData));
                 echo CHtml::tag('input', $inputData);
+                echo CHtml::tag('div', ['class' => 'imgtrup-tip'], $this->tip);
+                echo CHtml::closeTag('li');
             }
         }
         echo CHtml::closeTag('ul');
+        
+        if($this->multiplicate
+            && isset($this->multiplicateButtonOptions)
+            && $this->multiplicateButtonOptions['position'] === 'after') {
+            echo $mbtn;
+        }
+        
         echo CHtml::closeTag($this->tag);
     }
 
@@ -194,6 +254,10 @@ class ImageUploader extends CWidget
             throw new YiiITException('Size can be only `'
                 .implode('`, `', $this->_core->allowedSizes())
                 ."`, not `$this->size`");
+        }
+        
+        if($this->model === null || empty($this->attribute)) {
+            throw new YiiITException('Model and it\'s attribute should be defined');
         }
     }
 }
