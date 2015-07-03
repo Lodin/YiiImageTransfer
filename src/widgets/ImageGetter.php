@@ -71,7 +71,7 @@ class ImageGetter extends CWidget
         $this->checkData();
 
         Yii::app()->getClientScript()
-            ->registerCssFile($this->_core->assetUrl.'/css/imagetransfer.css');
+            ->registerCssFile("/{$this->_core->assetUrl}/css/imagetransfer.css");
     }
 
     public function run()

@@ -1,6 +1,7 @@
 <?php
 
 use FileTransfer\Wrappers\GottenFile;
+use FileTransfer\Transfer;
 
 class ImageFile extends GottenFile
 {
