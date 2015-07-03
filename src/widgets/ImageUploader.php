@@ -259,5 +259,10 @@ class ImageUploader extends CWidget
         if($this->model === null || empty($this->attribute)) {
             throw new YiiITException('Model and it\'s attribute should be defined');
         }
+        
+        if(!property_exists(get_class($this->model), $this->attribute)) {
+            throw new YiiITException('Model `'.get_class($this->model)
+                ."` does not have attribute `{$this->attribute}`");
+        }
     }
 }
